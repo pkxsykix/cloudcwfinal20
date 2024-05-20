@@ -3,6 +3,6 @@ entrypoint: gunicorn -b :$PORT index:app
 
 env_variables:
   REGION_NAME: "us-east-1"
-  AWS_ACCESS_KEY_ID: "AKIAXTUN6PD5WLPGHBV2"
-  AWS_SECRET_ACCESS_KEY: "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"
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
   

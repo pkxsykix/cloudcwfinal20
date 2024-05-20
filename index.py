@@ -8,7 +8,11 @@ import os
 import concurrent.futures
 import requests
 import paramiko
-import time
+import configparser
+
+# Read configuration from .cred file
+config = configparser.ConfigParser()
+config.read('.cred')
 
 # Initialize the boto3 client with the specific region
 lambda_client = boto3.client('lambda', region_name='us-east-1')
@@ -23,9 +27,12 @@ var95_storage = []
 var99_storage = []
 profit_loss_storage = []
 
-# EC2 configuration
-ec2_key_name = 'ec2-keypair'  # Replace with your EC2 key pair name
-ec2_private_key_path = '/path/to/ec2-keypair.pem'  # Replace with the path to your private key
+# EC2 configuration from .cred file
+ec2_key_name = config['ec2']['key_name']
+ec2_private_key_path = config['ec2']['private_key_path']
+ec2_ami_id = config['ec2']['ami_id']
+ec2_instance_type = config['ec2']['instance_type']
+github_repo = config['ec2']['github_repo']
 ec2_instance_id = None  # Store the EC2 instance ID
 
 @app.route('/analyse', methods=['POST'])
@@ -124,6 +131,7 @@ def run_simulation_on_ec2(minhistory, shots):
         'shots': shots
     })
 
+    # Run the script using the payload
     stdin, stdout, stderr = ssh_client.exec_command(f"python3 /home/ec2-user/your-project/simulate.py '{payload}'")
     output = stdout.read().decode()
     error = stderr.read().decode()
@@ -158,18 +166,20 @@ def run_simulation_on_ec2(minhistory, shots):
 def create_ec2_instance():
     try:
         response = ec2_client.run_instances(
-            ImageId='ami-0abcdef1234567890',  # Replace with your actual AMI ID
-            InstanceType='t2.micro',
+            ImageId=ec2_ami_id,
+            InstanceType=ec2_instance_type,
             KeyName=ec2_key_name,
             MinCount=1,
             MaxCount=1,
-            UserData='''#!/bin/bash
-                        sudo apt-get update
-                        sudo apt-get install -y python3 python3-pip git
-                        git clone https://github.com/your-repo/your-project.git
-                        cd your-project
+            UserData=f'''#!/bin/bash
+                        sudo yum update -y
+                        sudo yum install -y python3 python3-pip git
+                        git clone https://github.com/pkxsykix/cloudcwfinal20.git
+                        cd cloudcwfinal20
                         pip3 install -r requirements.txt
-                        python3 simulate.py'''
+                        python3 simulate.py > /home/ec2-user/simulate.log 2>&1
+                        ls /home/ec2-user/cloudcwfinal20 > /home/ec2-user/project_files.log
+                        '''
         )
         instance_id = response['Instances'][0]['InstanceId']
         print(f"EC2 instance {instance_id} created")
@@ -219,7 +229,7 @@ def warmup():
         ssh_client.connect(public_dns, username='ec2-user', pkey=key)
 
         sftp_client = ssh_client.open_sftp()
-        sftp_client.get('/home/ec2-user/your-project/results.json', '/tmp/results.json')
+        sftp_client.get('/home/ec2-user/cloudcwfinal20/results.json', '/tmp/results.json')
         sftp_client.close()
         ssh_client.close()
 
