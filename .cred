@@ -1,0 +1,6 @@
+[ec2]
+key_name = pkx_key
+private_key_path = pkx_key.pem
+ami_id = ami-072ebb896980363de
+instance_type = t2.micro
+github_repo = https://github.com/your-repo/your-project.git

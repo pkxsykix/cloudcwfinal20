@@ -1,0 +1,12 @@
+pandas
+yfinance
+pandas_datareader
+numpy
+flask
+gunicorn
+matplotlib
+Flask-cors
+requests
+boto3
+seaborn
+paramiko
